@@ -25,6 +25,7 @@ header p{margin:0;font-size:13px;opacity:.92}
 .tabs button.active b{color:var(--accent)}
 .persona{font-size:13px;color:var(--sub);margin:10px 0 22px;padding-left:10px;border-left:3px solid var(--line)}
 .step{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 0 18px;overflow:hidden}
+.step.hidden{display:none}
 .step-head{display:flex;align-items:baseline;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .step-no{background:var(--accent);color:#fff;border-radius:6px;font-size:12px;padding:2px 10px;font-weight:bold}
 .step-title{font-weight:bold;font-size:15px}
@@ -39,10 +40,19 @@ header p{margin:0;font-size:13px;opacity:.92}
 .msg.you .who{color:#3a5a8c}
 .msg.ai{background:var(--ai-bg);margin-right:32px}
 .msg.ai .who{color:var(--accent)}
+.msg.fade{animation:fadeSlide .35s ease both}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .artifact{font-size:13px;color:var(--sub);border-top:1px dashed var(--line);margin-top:12px;padding-top:8px}
-.result{background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:16px 18px;margin:26px 0}
+.adv{display:block;margin:14px auto 4px;background:var(--accent);color:#fff;border:none;border-radius:24px;padding:10px 30px;font-size:14px;font-weight:bold;font-family:inherit;cursor:pointer}
+.adv:disabled{opacity:.5;cursor:default}
+.result{background:var(--card);border:2px solid var(--accent);border-radius:12px;padding:16px 18px;margin:26px 0;animation:popIn .45s ease both}
+@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 .result h2{margin:0 0 10px;font-size:16px;color:var(--accent)}
 .result pre{margin:0;white-space:pre-wrap;font-family:inherit;font-size:13.5px;background:var(--bg);border-radius:8px;padding:12px 14px}
+.card-use{background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0 0;font-size:13.5px;animation:fadeSlide .5s ease both}
+.card-use h3{margin:0 0 6px;font-size:14px;color:var(--accent)}
+.card-use ul{margin:0;padding-left:1.2em}
+.card-use li{margin:3px 0}
 .cta{margin:34px 0 12px;text-align:center}
 .cta p{font-size:14px;margin:0 0 12px}
 .cta a{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;font-weight:bold;font-size:15px;padding:14px 42px;border-radius:28px}
@@ -54,11 +64,11 @@ footer{margin-top:40px;text-align:center;font-size:12px;color:var(--sub)}
 <body>
 <header>
   <h1>AI社員キット 試用デモ</h1>
-  <p>対話の記録を読むだけで、雇ってから最初の仕事が終わるまでの流れと成果物が分かります</p>
+  <p>番号で答えながら進めると、雇ってから最初の仕事が終わるまでの流れと成果物が分かります</p>
 </header>
 <div class="wrap">
   <div class="note">
-    このページは<b>実行の記録</b>を読む形式のデモです（AIが動くページではありません）。商品に書かれたプロンプト本文は非公開のため、「約◯文字」という目安だけを表示します。あなたがやるのは<b>番号で答えること</b>と、プロンプトを貼り付けることだけ。すべて記録のとおりに進みます。
+    このページは<b>実行の記録を再生する</b>デモです（AIが動くページではありません）。ボタンを押すたびに記録のとおりのやり取りが1つずつ出てきます。商品に書かれたプロンプト本文は非公開のため、「約◯文字」という目安だけを表示します。あなたがやるのは<b>番号で答えること</b>と、プロンプトを貼り付けることだけ。
   </div>
   <div class="tabs" id="tabs"></div>
   <div id="persona"></div>
@@ -80,34 +90,97 @@ const resultEl=document.getElementById('result');
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-function render(sc){
-  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.id===sc.id));
+function typeInto(el,text,done){
+  el.textContent='';
+  let i=0;
+  const t=setInterval(()=>{
+    el.textContent+=text[i++];
+    if(i>=text.length){clearInterval(t);if(done)done();}
+  },14);
+}
+
+function buildFlow(sc){
   personaEl.innerHTML='<p class="persona"><b>このシナリオで試す人:</b> '+esc(sc.persona)+'<br><b>任せる仕事:</b> '+esc(sc.goal)+'（役割: '+esc(sc.label)+'）</p>';
-  stepsEl.innerHTML=sc.steps.map(st=>{
-    let html='<div class="step"><div class="step-head"><span class="step-no">'+esc(st.step)+'</span><span class="step-title">'+esc(st.title)+'</span><span class="step-time">目安 '+esc(st.time)+'</span></div><div class="step-body">';
+  resultEl.innerHTML='';
+  stepsEl.innerHTML=sc.steps.map((st,si)=>{
+    const last=si===sc.steps.length-1;
+    const btnLabel=(st.dialogue.length===0)?'▶ 1日目を完了する':'▶ 答えて進める';
+    let html='<div class="step'+(si===0?'':' hidden')+'" data-si="'+si+'"><div class="step-head"><span class="step-no">'+esc(st.step)+'</span><span class="step-title">'+esc(st.title)+'</span><span class="step-time">目安 '+esc(st.time)+'</span></div><div class="step-body">';
     html+='<div class="prompt-card">📋 ここで商品に書かれたプロンプト（<span class="chars">'+esc(st.prompt.chars)+'</span>）を貼り付けます<span class="why">'+esc(st.prompt.note)+'</span></div>';
-    if(st.dialogue.length===0){
-      html+='<div class="msg ai"><span class="who">ミナト</span>初回報告（3行）・明日の一手・雇用カードを出して、1日目が完了します。</div>';
-    }else{
-      html+=st.dialogue.map(d=>
-        '<div class="msg you"><span class="who">あなた</span>'+esc(d.you)+'</div>'+
-        '<div class="msg ai"><span class="who">ミナト</span>'+esc(d.ai)+'</div>'
-      ).join('');
-    }
-    if(st.artifact) html+='<div class="artifact">💾 この時点でできているもの: '+esc(st.artifact)+'</div>';
+    html+='<div class="dlg"></div>';
+    if(st.artifact) html+='<div class="artifact" style="display:none">💾 この時点でできているもの: '+esc(st.artifact)+'</div>';
+    if(!last||true) html+='<button class="adv">'+btnLabel+'</button>';
     return html+'</div></div>';
   }).join('');
-  resultEl.innerHTML='<div class="result"><h2>🏁 最終成果物: 雇用カード</h2><pre>'+esc(sc.result)+'</pre></div>';
+
+  const stepEls=[...stepsEl.querySelectorAll('.step')];
+  sc.steps.forEach((st,si)=>{
+    const card=stepEls[si];
+    const dlg=card.querySelector('.dlg');
+    const btn=card.querySelector('.adv');
+    const artifact=card.querySelector('.artifact');
+    const exchanges=(st.dialogue.length===0)
+      ?[{you:null,ai:'初回報告（3行）・明日の一手・雇用カードを出して、1日目が完了します。'}]
+      :st.dialogue;
+    let idx=0;
+    btn.addEventListener('click',()=>{
+      if(idx>=exchanges.length)return;
+      btn.disabled=true;
+      const ex=exchanges[idx++];
+      if(ex.you!==null){
+        const ym=document.createElement('div');
+        ym.className='msg you fade';
+        ym.innerHTML='<span class="who">あなた</span><span class="tx"></span>';
+        ym.querySelector('.tx').textContent=ex.you;
+        dlg.appendChild(ym);
+      }
+      const am=document.createElement('div');
+      am.className='msg ai';
+      am.innerHTML='<span class="who">ミナト</span><span class="tx"></span>';
+      dlg.appendChild(am);
+      const tx=am.querySelector('.tx');
+      setTimeout(()=>typeInto(tx,ex.ai,()=>{
+        if(artifact){artifact.style.display='';artifact.classList.add('fade');}
+        btn.disabled=false;
+        if(idx>=exchanges.length){
+          btn.style.display='none';
+          if(si+1<stepEls.length){
+            const nx=stepEls[si+1];
+            nx.classList.remove('hidden');
+            nx.scrollIntoView({behavior:'smooth',block:'start'});
+          }else{
+            showResult(sc);
+          }
+        }
+      }),ex.you!==null?380:60);
+    });
+  });
+  stepEls[0].scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function showResult(sc){
+  resultEl.innerHTML='<div class="result"><h2>🏁 最終成果物: 雇用カード</h2><pre></pre>'+
+    '<div class="card-use"><h3>このカードの使い方</h3><ul>'+
+    '<li>カードは<b>設定・役割・依頼・報告を残す記録シート</b>です。手元に保存してください。</li>'+
+    '<li>翌日以降は手動です。<b>保存したカードと次の依頼をあなたがAIに貼り</b>、返ってきた内容を確認します。</li>'+
+    '<li>AIは自動で動き続けず、<b>最終確認はあなた</b>が行います。</li>'+
+    '</ul></div></div>';
+  resultEl.querySelector('pre').textContent=sc.result;
+  resultEl.scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 SCENARIOS.forEach((sc,i)=>{
   const b=document.createElement('button');
   b.dataset.id=sc.id;
   b.innerHTML='<b>'+esc(sc.label)+'</b><small>'+esc(sc.goal)+'</small>';
-  b.addEventListener('click',()=>render(sc));
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('active',x===b));
+    buildFlow(sc);
+  });
   tabsEl.appendChild(b);
 });
-render(SCENARIOS[0]);
+document.querySelector('.tabs button').classList.add('active');
+buildFlow(SCENARIOS[0]);
 </script>
 </body>
 </html>
