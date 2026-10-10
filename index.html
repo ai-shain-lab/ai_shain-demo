@@ -54,6 +54,7 @@ header p{margin:0;font-size:13px;opacity:.92}
 .card-use{background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin:12px 0 0;font-size:13.5px;animation:fadeSlide .5s ease both}
 .card-use h3{margin:0 0 6px;font-size:14px;color:var(--accent)}
 .card-use ul{margin:0;padding-left:1.2em}
+.card-use ol{margin:0;padding-left:1.4em}
 .card-use li{margin:3px 0}
 .cta{margin:34px 0 12px;text-align:center}
 .cta p{font-size:14px;margin:0 0 12px}
@@ -173,7 +174,12 @@ function showResult(sc){
     '<li><b>翌日は「貼るだけ」で2日目が始まります。</b>設定・役割・初回の結果が1枚にまとまっているので、翌日はカードと次の依頼をAIに貼るだけ。ゼロから指示を書き直す作業がなくなります。</li>'+
     '<li><b>別の日・別のAIでも、同じ設定で仕事が続きます。</b>カードが引き継ぎ書の代わりになるので、チャットを消してしまっても再開でき、AIを乗り換えても文脈が途切れません。</li>'+
     '<li><b>AIが勝手に動かないので、安心して任せられます。</b>AIはあなたが返答を確認するたびに1歩だけ進みます。仕事の方向づけと最終判断は、常にあなたの手に残ります。</li>'+
-    '</ul></div></div>';
+    '</ul></div>'+
+    '<div class="card-use"><h3>翌日以降の進め方（1日目はここで終わり）</h3><ol>'+
+    '<li>保存した雇用カードをAIに貼ります。設定の説明は不要です。</li>'+
+    '<li>カードの「明日の一手」に書いた行動を、次の依頼としてそのまま伝えます。</li>'+
+    '<li>返ってきた報告を確認する。勤務の記録が残るほど、次の一手が決めやすくなります。</li>'+
+    '</ol></div></div>';
   resultEl.querySelector('pre').textContent=sc.result;
   resultEl.scrollIntoView({behavior:'smooth',block:'center'});
 }
