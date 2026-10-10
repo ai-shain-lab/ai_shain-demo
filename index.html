@@ -40,6 +40,8 @@ header p{margin:0;font-size:13px;opacity:.92}
 .msg.you .who{color:#3a5a8c}
 .msg.ai{background:var(--ai-bg);margin-right:32px}
 .msg.ai .who{color:var(--accent)}
+.msg.menu{background:#fbfaf6;border:1px dashed var(--line);margin-right:32px}
+.msg.menu .who{color:var(--sub)}
 .msg.fade{animation:fadeSlide .35s ease both}
 @keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .artifact{font-size:13px;color:var(--sub);border-top:1px dashed var(--line);margin-top:12px;padding-top:8px}
@@ -68,7 +70,7 @@ footer{margin-top:40px;text-align:center;font-size:12px;color:var(--sub)}
 </header>
 <div class="wrap">
   <div class="note">
-    このページは<b>実行の記録を再生する</b>デモです（AIが動くページではありません）。ボタンを押すたびに記録のとおりのやり取りが1つずつ出てきます。商品に書かれたプロンプト本文は非公開のため、「約◯文字」という目安だけを表示します。あなたがやるのは<b>番号で答えること</b>と、プロンプトを貼り付けることだけ。
+    このページは<b>実行の記録を再生する</b>デモです（AIが動くページではありません）。ボタンを押すたびに記録のとおりのやり取りが1つずつ出てきます。ミナトが出す<b>選択肢メニューも記録どおりに表示</b>するので、返した番号が何を指すかその場で分かります。商品に書かれたプロンプト本文は非公開のため、「約◯文字」という目安だけを表示します。あなたがやるのは<b>番号で答えること</b>と、プロンプトを貼り付けることだけ。
   </div>
   <div class="tabs" id="tabs"></div>
   <div id="persona"></div>
@@ -127,6 +129,13 @@ function buildFlow(sc){
       if(idx>=exchanges.length)return;
       btn.disabled=true;
       const ex=exchanges[idx++];
+      if(ex.menu){
+        const mm=document.createElement('div');
+        mm.className='msg menu fade';
+        mm.innerHTML='<span class="who">ミナト（選択肢メニュー）</span><span class="tx"></span>';
+        mm.querySelector('.tx').textContent=ex.menu;
+        dlg.appendChild(mm);
+      }
       if(ex.you!==null){
         const ym=document.createElement('div');
         ym.className='msg you fade';
@@ -160,10 +169,10 @@ function buildFlow(sc){
 
 function showResult(sc){
   resultEl.innerHTML='<div class="result"><h2>🏁 最終成果物: 雇用カード</h2><pre></pre>'+
-    '<div class="card-use"><h3>このカードの使い方</h3><ul>'+
-    '<li>カードは<b>設定・役割・依頼・報告を残す記録シート</b>です。手元に保存してください。</li>'+
-    '<li>翌日以降は手動です。<b>保存したカードと次の依頼をあなたがAIに貼り</b>、返ってきた内容を確認します。</li>'+
-    '<li>AIは自動で動き続けず、<b>最終確認はあなた</b>が行います。</li>'+
+    '<div class="card-use"><h3>このカードを手元に残すと、翌日からこう変わります</h3><ul>'+
+    '<li><b>翌日は「貼るだけ」で2日目が始まります。</b>設定・役割・初回の結果が1枚にまとまっているので、翌日はカードと次の依頼をAIに貼るだけ。ゼロから指示を書き直す作業がなくなります。</li>'+
+    '<li><b>別の日・別のAIでも、同じ設定で仕事が続きます。</b>カードが引き継ぎ書の代わりになるので、チャットを消してしまっても再開でき、AIを乗り換えても文脈が途切れません。</li>'+
+    '<li><b>AIが勝手に動かないので、安心して任せられます。</b>AIはあなたが返答を確認するたびに1歩だけ進みます。仕事の方向づけと最終判断は、常にあなたの手に残ります。</li>'+
     '</ul></div></div>';
   resultEl.querySelector('pre').textContent=sc.result;
   resultEl.scrollIntoView({behavior:'smooth',block:'center'});
